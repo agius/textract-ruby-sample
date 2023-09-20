@@ -33,16 +33,19 @@ class TextractClient
         s3_object: {
           bucket: bucket_name,
           name: obj_key
-        },
-        feature_types: ['TABLES'],
-        client_request_token: obj_key,
-      }
+        }
+      },
+      feature_types: ['TABLES'],
+      client_request_token: client_token
     )
 
     resp.job_id
   end
 
-  def wait_for_analysis(job_id, wait_interval: 5.seconds, max_wait_intervals: 10)
+  DEFAULT_WAIT_INTERVAL = 5 # in seconds, used for sleep calls
+  DEFAULT_MAX_WAIT_INTERVALS = 10
+
+  def wait_for_analysis(job_id, wait_interval: DEFAULT_WAIT_INTERVAL, max_wait_intervals: DEFAULT_MAX_WAIT_INTERVALS)
     count = 0
     begin
       resp = client.get_document_analysis(
@@ -61,7 +64,9 @@ class TextractClient
     blocks = resp.blocks
     warnings = resp.warnings
 
-    return unless ['SUCCEEDED', 'PARTIAL_SUCCESS'].include?(resp.job_status)
+    unless ['SUCCEEDED', 'PARTIAL_SUCCESS'].include?(resp.job_status)
+      raise "Job #{job_id} has status #{resp.job_status} | #{resp.inspect}"
+    end
 
     while resp.next_token.to_s.length > 0
       resp = client.get_document_analysis(
@@ -78,12 +83,14 @@ class TextractClient
   end
 
   def upload_to_s3(filepath)
-    key = File.basename(filepath).gsub(/\W+/, '-')
-    resp = s3_client.put_object(
-      body: filepath,
-      bucket: bucket_name,
-      key: key
-    )
+    key = File.basename(filepath).gsub(/\W+/, '_').squeeze("_")
+    File.open(filepath, 'rb') do |file|
+      s3_client.put_object(
+        body: file,
+        bucket: bucket_name,
+        key: key
+      )
+    end
     key
   end
 end

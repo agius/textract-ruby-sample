@@ -3,4 +3,5 @@ require_relative 'result'
 require_relative 'client'
 
 client = TextractClient.new
-client.analyze_document('example-table.pdf')
+result = client.analyze_document('example-table.pdf')
+result.print_tree

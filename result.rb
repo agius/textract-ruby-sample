@@ -18,7 +18,7 @@ class Result
     TABLE_FOOTER
   )
 
-  def initialize(blocks, warnings)
+  def initialize(blocks: [], warnings: [])
     @blocks = blocks.to_h { |blk| [blk.id, blk] }
     @warnings = warnings
   end
@@ -28,8 +28,12 @@ class Result
   end
 
   def tree
-    @tree ||= blocks_by_type('PAGE').map do |page_block|
+    @tree ||= blocks_by_type('PAGE').map do |_id, page_block|
       Node.new(page_block, blocks_map: blocks)
     end
+  end
+
+  def print_tree
+    tree.each {|node| node.print_tree }
   end
 end

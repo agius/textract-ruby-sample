@@ -17,8 +17,11 @@ class Node
     @block = block
     @parent = parent
     @children = []
+    return if block.relationships.nil?
+
     block.relationships.each do |rel|
       next unless rel.type == 'CHILD'
+      next if rel.ids.nil? || rel.ids.empty?
 
       rel.ids.each do |block_id|
         blk = blocks_map[block_id]
@@ -30,17 +33,19 @@ class Node
   end
 
   def to_s
-    txt = if block.text.length > 10
+    txt = if block.text.nil?
+      ''
+    elsif block.text.length > 10
       "#{block.text[0..7]}..."
     else
       block.text
     end
-    "<#{block.type} #{txt} #{block.id}>"
+    "<#{block.block_type} #{txt} #{block.id}>"
   end
 
   def print_tree(indent = 0)
     indent_txt = indent > 0 ? ' ' * (indent * 2) : ''
-    "#{indent_txt}#{to_s}"
+    puts "#{indent_txt}#{to_s}"
     children.each {|chld| chld.print_tree(indent + 1) }
   end
 end
